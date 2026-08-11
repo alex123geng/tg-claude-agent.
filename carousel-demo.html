@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stacked Destinations Carousel</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --muted: #1c1c1c;
+    --fg: #f5f5f5;
+    --fg-dim: rgba(245, 245, 245, 0.65);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+  }
+
+  .hero {
+    text-align: center;
+    max-width: 40rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .hero p {
+    margin: 0;
+    color: var(--fg-dim);
+    font-size: 1rem;
+  }
+
+  .carousel-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .carousel {
+    position: relative;
+    width: 100%;
+    max-width: 80rem;
+    height: 20rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  @media (min-width: 640px) {
+    .carousel { height: 28rem; }
+  }
+  @media (min-width: 1024px) {
+    .carousel { height: 32rem; }
+  }
+
+  .drag-surface {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    cursor: grab;
+    touch-action: none;
+  }
+  .drag-surface:active { cursor: grabbing; }
+
+  .card {
+    position: absolute;
+    width: 11rem;
+    height: 14rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: var(--muted);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  @media (min-width: 640px) {
+    .card { width: 14rem; height: 20rem; }
+  }
+  @media (min-width: 1024px) {
+    .card { width: 16rem; height: 24rem; }
+  }
+
+  .card img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .card .dim-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    pointer-events: none;
+  }
+
+  .card .gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2) 55%, transparent);
+    pointer-events: none;
+  }
+
+  .card .badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  @media (min-width: 640px) {
+    .card .badge { top: 1.25rem; right: 1.25rem; padding: 0.25rem 0.75rem; font-size: 0.7rem; }
+  }
+  @media (min-width: 1024px) {
+    .card .badge { top: 1.5rem; right: 1.5rem; }
+  }
+
+  .card .info {
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 1.25rem;
+    color: #fff;
+    text-align: center;
+  }
+  @media (min-width: 640px) {
+    .card .info { left: 1.25rem; right: 1.25rem; bottom: 2rem; text-align: left; }
+  }
+  @media (min-width: 1024px) {
+    .card .info { left: 1.5rem; right: 1.5rem; bottom: 2.5rem; }
+  }
+
+  .card .title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 0.15rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  @media (min-width: 640px) {
+    .card .title { font-size: 1.125rem; }
+  }
+  @media (min-width: 1024px) {
+    .card .title { font-size: 1.25rem; }
+  }
+
+  .card .desc {
+    display: none;
+    font-size: 0.75rem;
+    font-style: italic;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  @media (min-width: 640px) {
+    .card .desc { display: -webkit-box; }
+  }
+
+  .hint {
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <h1>Featured Destinations</h1>
+    <p>Drag the cards left or right to explore.</p>
+  </div>
+
+  <div class="carousel-wrap">
+    <div class="carousel" id="carousel">
+      <div class="drag-surface" id="dragSurface"></div>
+    </div>
+    <p class="hint">Drag / swipe to browse</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  var slides = [
+    {
+      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80",
+      title: "Mountain Trek",
+      description: "Scale new heights and embrace the hiker's journey.",
+      badge: "Adventure"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=800&q=80",
+      title: "River Rafting",
+      description: "Feel the adrenaline rush as you navigate the wild rapids.",
+      badge: "Extreme"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80",
+      title: "Forest Walk",
+      description: "Deep dive into the silence of the ancient woods.",
+      badge: "Nature"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      title: "Azure Beach",
+      description: "Unwind on the crystal clear shores of a tropical paradise.",
+      badge: "Paradise"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1518623489648-a173ef7824f3?auto=format&fit=crop&w=800&q=80",
+      title: "Spiritual Path",
+      description: "Discover inner peace through ancient wisdom.",
+      badge: "Serenity"
+    }
+  ];
+
+  var total = slides.length;
+  var carousel = document.getElementById("carousel");
+  var dragSurface = document.getElementById("dragSurface");
+
+  function getConfig(width) {
+    if (width < 640) {
+      return { distanceDivisor: 120, velocityDivisor: 500, sensitivity: 180, xMultiplier: 90, yMultiplier: 20, rotationMultiplier: 8, scaleReduction: 0.06 };
+    }
+    if (width < 1024) {
+      return { distanceDivisor: 160, velocityDivisor: 650, sensitivity: 220, xMultiplier: 130, yMultiplier: 30, rotationMultiplier: 10, scaleReduction: 0.09 };
+    }
+    return { distanceDivisor: 200, velocityDivisor: 800, sensitivity: 250, xMultiplier: 170, yMultiplier: 40, rotationMultiplier: 12, scaleReduction: 0.12 };
+  }
+
+  var config = getConfig(window.innerWidth);
+
+  function interpolate(x, inputRange, outputRange) {
+    if (x <= inputRange[0]) return outputRange[0];
+    if (x >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
+    for (var i = 0; i < inputRange.length - 1; i++) {
+      if (x >= inputRange[i] && x <= inputRange[i + 1]) {
+        var t = (x - inputRange[i]) / (inputRange[i + 1] - inputRange[i]);
+        return outputRange[i] + t * (outputRange[i + 1] - outputRange[i]);
+      }
+    }
+    return outputRange[outputRange.length - 1];
+  }
+
+  var cardRefs = slides.map(function (slide) {
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var img = document.createElement("img");
+    img.src = slide.image;
+    img.alt = slide.title;
+    img.loading = "lazy";
+    img.onerror = function () {
+      img.style.display = "none";
+      card.style.background = "linear-gradient(135deg, #333, #111)";
+    };
+
+    var dim = document.createElement("div");
+    dim.className = "dim-overlay";
+    dim.style.opacity = "0";
+
+    var gradient = document.createElement("div");
+    gradient.className = "gradient";
+
+    var badge = document.createElement("div");
+    badge.className = "badge";
+    badge.textContent = slide.badge;
+
+    var info = document.createElement("div");
+    info.className = "info";
+
+    var title = document.createElement("p");
+    title.className = "title";
+    title.textContent = slide.title;
+
+    var desc = document.createElement("p");
+    desc.className = "desc";
+    desc.textContent = slide.description;
+
+    info.appendChild(title);
+    info.appendChild(desc);
+    card.appendChild(img);
+    card.appendChild(dim);
+    card.appendChild(gradient);
+    card.appendChild(badge);
+    card.appendChild(info);
+    carousel.appendChild(card);
+
+    return { root: card, dim: dim, title: title, desc: desc };
+  });
+
+  var progress = 0;
+
+  function render() {
+    cardRefs.forEach(function (ref, i) {
+      var diff = (i - progress) % total;
+      if (diff > total / 2) diff -= total;
+      if (diff < -total / 2) diff += total;
+
+      var offset = diff;
+      var absO = Math.abs(offset);
+
+      var x = offset * config.xMultiplier;
+      var rotate = absO < 0.05 ? 0 : offset * config.rotationMultiplier;
+      var y = absO < 0.05 ? 0 : absO * config.yMultiplier;
+      var scale = 1 - absO * config.scaleReduction;
+      var opacity = interpolate(offset, [-total / 2, -total / 2 + 0.5, 0, total / 2 - 0.5, total / 2], [0, 1, 1, 1, 0]);
+      var zIndex = Math.round(100 - absO * 10);
+      var overlayOpacity = interpolate(offset, [-2, -0.5, 0, 0.5, 2], [0.5, 0.2, 0, 0.2, 0.5]);
+      var textOpacity = interpolate(offset, [-0.5, 0, 0.5], [0, 1, 0]);
+
+      ref.root.style.transform = "translate3d(" + x + "px, " + y + "px, 0) rotate(" + rotate + "deg) scale(" + scale + ")";
+      ref.root.style.opacity = opacity;
+      ref.root.style.zIndex = zIndex;
+      ref.dim.style.opacity = overlayOpacity;
+      ref.title.style.opacity = textOpacity;
+      ref.desc.style.opacity = textOpacity;
+    });
+  }
+
+  // --- Spring animation (mimics Framer Motion's animate(value, target, {type:"spring"})) ---
+  var STIFFNESS = 200, DAMPING = 30, MASS = 1;
+  var springTarget = 0;
+  var springVelocity = 0;
+  var springRAF = null;
+  var lastFrameTime = null;
+
+  function stopSpring() {
+    if (springRAF) cancelAnimationFrame(springRAF);
+    springRAF = null;
+    lastFrameTime = null;
+  }
+
+  function springStep(now) {
+    if (lastFrameTime === null) lastFrameTime = now;
+    var dt = Math.min((now - lastFrameTime) / 1000, 0.032);
+    lastFrameTime = now;
+
+    var accel = (-STIFFNESS * (progress - springTarget) - DAMPING * springVelocity) / MASS;
+    springVelocity += accel * dt;
+    progress += springVelocity * dt;
+    render();
+
+    if (Math.abs(progress - springTarget) < 0.001 && Math.abs(springVelocity) < 0.001) {
+      progress = springTarget;
+      springVelocity = 0;
+      render();
+      stopSpring();
+      return;
+    }
+    springRAF = requestAnimationFrame(springStep);
+  }
+
+  function animateTo(target, initialVelocity) {
+    stopSpring();
+    springTarget = target;
+    springVelocity = initialVelocity || 0;
+    springRAF = requestAnimationFrame(springStep);
+  }
+
+  // --- Drag handling (Pointer Events cover mouse + touch + pen) ---
+  var dragging = false;
+  var startProgress = 0;
+  var lastX = 0;
+  var samples = [];
+
+  function pushSample(x) {
+    var now = performance.now();
+    samples.push({ x: x, t: now });
+    while (samples.length > 6) samples.shift();
+  }
+
+  function estimateVelocityPxPerSec() {
+    if (samples.length < 2) return 0;
+    var first = samples[0];
+    var last = samples[samples.length - 1];
+    var dt = last.t - first.t;
+    if (dt <= 0) return 0;
+    return ((last.x - first.x) / dt) * 1000;
+  }
+
+  dragSurface.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    stopSpring();
+    startProgress = progress;
+    lastX = e.clientX;
+    samples = [];
+    pushSample(e.clientX);
+    dragSurface.setPointerCapture(e.pointerId);
+  });
+
+  dragSurface.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - lastX;
+    lastX = e.clientX;
+    pushSample(e.clientX);
+    progress += -dx / config.sensitivity;
+    render();
+  });
+
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+
+    var dragDistance = e.clientX - samples[0].x;
+    var velocityPxPerSec = estimateVelocityPxPerSec();
+
+    var distanceShift = -dragDistance / config.distanceDivisor;
+    var velocityShift = -velocityPxPerSec / config.velocityDivisor;
+
+    var totalShift = Math.round(distanceShift + velocityShift);
+    totalShift = Math.max(-3, Math.min(3, totalShift));
+
+    var target = Math.round(startProgress) + totalShift;
+    var progressVelocity = -velocityPxPerSec / config.sensitivity;
+
+    animateTo(target, progressVelocity);
+  }
+
+  dragSurface.addEventListener("pointerup", endDrag);
+  dragSurface.addEventListener("pointercancel", endDrag);
+
+  window.addEventListener("resize", function () {
+    config = getConfig(window.innerWidth);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
