@@ -1,0 +1,33 @@
+{
+  "name": "tg-claude-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram bot that exposes Claude Agent SDK (Claude Code) as a chat interface",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "warmup:whisper": "node scripts/warmup-whisper.js",
+    "register-webhook": "node scripts/register-webhook.js",
+    "webhook-info": "node scripts/webhook-info.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.222",
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "nodejs-whisper": "^0.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

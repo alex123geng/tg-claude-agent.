@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.*
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+data
+workspace
+.git
+.gitignore
+*.log
+README.md
